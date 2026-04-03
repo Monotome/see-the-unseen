@@ -170,13 +170,18 @@ This project uses GitHub Actions to automatically build and publish releases.
 1. Go to the [Actions tab](../../actions) in your GitHub repository
 2. Select the **Release** workflow
 3. Click **Run workflow**
-4. Enter the version number (e.g., `0.1.0`)
-5. Click **Run workflow** button
+4. Click **Run workflow** button
 
 The workflow will:
 - Build Windows installer (.msi)
 - Create a draft GitHub Release
 - Upload the installer as a release asset
+
+Before triggering the workflow, make sure these two files use the same version:
+- `apps/desktop/package.json`
+- `apps/desktop/src-tauri/tauri.conf.json`
+
+Example: set both to `0.1.0`, commit and push, then run the workflow.
 
 **Option 2: Git Tags**
 
@@ -204,8 +209,9 @@ Users can now download the installer from the Releases page!
 ### Important Notes
 
 - **Code Signing**: The app is currently not code-signed. Users will see a Windows SmartScreen warning. Click "More info" → "Run anyway" to install.
-- **Version Management**: The workflow automatically updates the version in `tauri.conf.json` during build.
+- **Version Management**: The workflow validates that `apps/desktop/package.json` and `apps/desktop/src-tauri/tauri.conf.json` use the same version before building.
 - **Draft Releases**: All releases are created as drafts first, giving you time to review before publishing.
+- **Build Scope**: The release workflow currently builds the Windows MSI installer only, which keeps release time shorter and reduces CI failure surface.
 
 ## 🤝 Contributing
 

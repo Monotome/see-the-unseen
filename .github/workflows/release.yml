@@ -2,73 +2,26 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g., 0.1.0)'
-        required: true
-        type: string
   push:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
+concurrency:
+  group: release-windows-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    outputs:
-      release_id: ${{ steps.create-release.outputs.id }}
-      release_upload_url: ${{ steps.create-release.outputs.upload_url }}
-      release_tag: ${{ steps.version.outputs.tag }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Determine version
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=v${{ inputs.version }}" >> $GITHUB_OUTPUT
-            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create Release
-        id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          release_name: See the Unseen ${{ steps.version.outputs.tag }}
-          body: |
-            ## 🎉 See the Unseen ${{ steps.version.outputs.version }}
-
-            Privacy-first desktop notepad with sliding protection window.
-
-            ### 📥 Downloads
-
-            **Windows:**
-            - `See-the-Unseen_${{ steps.version.outputs.version }}_x64_en-US.msi` - Recommended installer
-
-            ### ✨ What's New
-
-            <!-- Add release notes here before publishing -->
-
-            ### 🔐 Security Note
-
-            This app is not code-signed. Windows may show a "Windows protected your PC" warning when installing. Click "More info" → "Run anyway" to proceed. We're working on code signing for future releases.
-
-            ---
-
-            **Full Changelog**: https://github.com/${{ github.repository }}/commits/${{ steps.version.outputs.tag }}
-          draft: true
-          prerelease: false
-
   build-windows:
-    needs: create-release
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v4
         with:
@@ -78,6 +31,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -86,23 +40,66 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri -> target
+          cache-on-failure: true
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Update version in tauri.conf.json
+      - name: Validate release metadata
+        id: meta
         shell: pwsh
         run: |
-          $version = "${{ needs.create-release.outputs.release_tag }}".TrimStart("v")
-          $configPath = "apps/desktop/src-tauri/tauri.conf.json"
-          $config = Get-Content $configPath -Raw | ConvertFrom-Json
-          $config.version = $version
-          $config | ConvertTo-Json -Depth 10 | Set-Content $configPath -Encoding UTF8
+          $desktopPackage = Get-Content "apps/desktop/package.json" -Raw | ConvertFrom-Json
+          $tauriConfig = Get-Content "apps/desktop/src-tauri/tauri.conf.json" -Raw | ConvertFrom-Json
+          $version = "$($tauriConfig.version)".Trim()
+
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            Write-Error "Missing version in apps/desktop/src-tauri/tauri.conf.json"
+            exit 1
+          }
+
+          if ($desktopPackage.version -ne $version) {
+            Write-Error "apps/desktop/package.json version ($($desktopPackage.version)) does not match tauri.conf.json version ($version)."
+            exit 1
+          }
+
+          if ($version -notmatch '^\d+\.\d+\.\d+([.-][0-9A-Za-z.-]+)?$') {
+            Write-Error "Version '$version' is not a valid release version. Use semver like 0.1.0."
+            exit 1
+          }
+
+          $tag = "v$version"
+          if ("${{ github.event_name }}" -eq "push" -and "${{ github.ref_name }}" -ne $tag) {
+            Write-Error "Git tag '${{ github.ref_name }}' does not match app version '$version' (expected '$tag')."
+            exit 1
+          }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "release_name=See the Unseen $tag" >> $env:GITHUB_OUTPUT
+
+      - name: Typecheck desktop
+        run: pnpm desktop:check
 
       - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          releaseId: ${{ needs.create-release.outputs.release_id }}
           projectPath: apps/desktop
+          tauriScript: pnpm tauri
+          tagName: ${{ steps.meta.outputs.tag }}
+          releaseName: ${{ steps.meta.outputs.release_name }}
+          releaseBody: |
+            Privacy-first desktop notepad with sliding protection window.
+
+            Windows build attached below as an MSI installer.
+
+            Security note: this app is not code-signed yet, so Windows SmartScreen may show an "unknown publisher" warning.
+          releaseCommitish: ${{ github.sha }}
+          releaseDraft: true
+          prerelease: false
+          generateReleaseNotes: true
+          retryAttempts: 2
+          uploadUpdaterJson: false
+          args: --bundles msi
