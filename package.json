@@ -1,0 +1,18 @@
+{
+  "name": "see-the-unseen",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Privacy-first writing apps across desktop and mobile.",
+  "packageManager": "pnpm@10.13.1",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "desktop:dev": "pnpm --dir apps/desktop tauri dev",
+    "desktop:check": "pnpm --dir apps/desktop run check",
+    "desktop:web-build": "pnpm --dir apps/desktop run build",
+    "desktop:build": "pnpm --dir apps/desktop tauri build"
+  }
+}
