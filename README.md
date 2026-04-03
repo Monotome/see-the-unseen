@@ -109,7 +109,8 @@ see-the-unseen/
 │           └── tauri.conf.json          # Tauri configuration
 ├── .github/
 │   └── workflows/
-│       └── ci.yml          # CI/CD pipeline
+│       ├── ci.yml          # CI/CD pipeline
+│       └── release.yml     # Release workflow
 ├── pnpm-workspace.yaml     # Workspace configuration
 ├── LICENSE                 # MIT license
 └── README.md
@@ -157,6 +158,54 @@ pnpm desktop:build
 
 # Output will be in apps/desktop/src-tauri/target/release/bundle/
 ```
+
+## 🚢 Releasing
+
+This project uses GitHub Actions to automatically build and publish releases.
+
+### Creating a Release
+
+**Option 1: Manual Trigger (Recommended)**
+
+1. Go to the [Actions tab](../../actions) in your GitHub repository
+2. Select the **Release** workflow
+3. Click **Run workflow**
+4. Enter the version number (e.g., `0.1.0`)
+5. Click **Run workflow** button
+
+The workflow will:
+- Build Windows installer (.msi)
+- Create a draft GitHub Release
+- Upload the installer as a release asset
+
+**Option 2: Git Tags**
+
+```bash
+# Tag the release
+git tag v0.1.0
+git push origin v0.1.0
+
+# The workflow will trigger automatically
+```
+
+### Publishing the Release
+
+1. Go to the [Releases page](../../releases)
+2. Find your draft release
+3. Edit the release notes (add changelog, breaking changes, etc.)
+4. Click **Publish release**
+
+Users can now download the installer from the Releases page!
+
+### Release Artifacts
+
+- `See-the-Unseen_{version}_x64_en-US.msi` - Windows MSI installer
+
+### Important Notes
+
+- **Code Signing**: The app is currently not code-signed. Users will see a Windows SmartScreen warning. Click "More info" → "Run anyway" to install.
+- **Version Management**: The workflow automatically updates the version in `tauri.conf.json` during build.
+- **Draft Releases**: All releases are created as drafts first, giving you time to review before publishing.
 
 ## 🤝 Contributing
 
