@@ -2,6 +2,11 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version — must match tauri.conf.json (e.g. 0.1.2)'
+        required: true
+        type: string
   push:
     tags:
       - 'v*'
@@ -10,7 +15,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-windows-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -45,35 +50,44 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Validate release metadata
+      - name: Resolve release metadata
         id: meta
         shell: pwsh
         run: |
-          $desktopPackage = Get-Content "apps/desktop/package.json" -Raw | ConvertFrom-Json
-          $tauriConfig = Get-Content "apps/desktop/src-tauri/tauri.conf.json" -Raw | ConvertFrom-Json
-          $version = "$($tauriConfig.version)".Trim()
-
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            Write-Error "Missing version in apps/desktop/src-tauri/tauri.conf.json"
-            exit 1
+          # Determine the intended version
+          if ("${{ github.event_name }}" -eq "push") {
+            # Version comes from the pushed git tag (e.g. v0.1.2 → 0.1.2)
+            $version = "${{ github.ref_name }}".TrimStart("v")
+          } else {
+            # Version comes from the manual dispatch input
+            $version = "${{ inputs.version }}".Trim()
           }
 
-          if ($desktopPackage.version -ne $version) {
-            Write-Error "apps/desktop/package.json version ($($desktopPackage.version)) does not match tauri.conf.json version ($version)."
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            Write-Error "Could not determine release version."
             exit 1
           }
 
           if ($version -notmatch '^\d+\.\d+\.\d+([.-][0-9A-Za-z.-]+)?$') {
-            Write-Error "Version '$version' is not a valid release version. Use semver like 0.1.0."
+            Write-Error "Version '$version' is not valid semver (e.g. 0.1.2)."
+            exit 1
+          }
+
+          # Validate version matches tauri.conf.json
+          $tauriConfig = Get-Content "apps/desktop/src-tauri/tauri.conf.json" -Raw | ConvertFrom-Json
+          if ($tauriConfig.version -ne $version) {
+            Write-Error "Version mismatch: input/tag is '$version' but tauri.conf.json has '$($tauriConfig.version)'. Bump the version in the config files first."
+            exit 1
+          }
+
+          # Validate version matches package.json
+          $pkg = Get-Content "apps/desktop/package.json" -Raw | ConvertFrom-Json
+          if ($pkg.version -ne $version) {
+            Write-Error "Version mismatch: apps/desktop/package.json has '$($pkg.version)' but expected '$version'."
             exit 1
           }
 
           $tag = "v$version"
-          if ("${{ github.event_name }}" -eq "push" -and "${{ github.ref_name }}" -ne $tag) {
-            Write-Error "Git tag '${{ github.ref_name }}' does not match app version '$version' (expected '$tag')."
-            exit 1
-          }
-
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=$tag" >> $env:GITHUB_OUTPUT
           "release_name=See the Unseen $tag" >> $env:GITHUB_OUTPUT
