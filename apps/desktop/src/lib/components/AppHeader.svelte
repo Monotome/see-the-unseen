@@ -1,9 +1,5 @@
 <script lang="ts">
   let {
-    fileName,
-    words,
-    characters,
-    isDirty,
     protectionLabel,
     protectionTone,
     saveLabel,
@@ -14,10 +10,6 @@
     onToggleProtection,
     onToggleSettings,
   }: {
-    fileName: string;
-    words: number;
-    characters: number;
-    isDirty: boolean;
     protectionLabel: string;
     protectionTone: "danger" | "safe";
     saveLabel: string;
@@ -33,13 +25,7 @@
 <header class="topbar">
   <div class="headline">
     <p class="eyebrow">Privacy notepad</p>
-    <div class="title-row">
-      <h1>See the Unseen</h1>
-      {#if isDirty}
-        <span class="dirty-pill">dirty</span>
-      {/if}
-    </div>
-    <p class="file-meta">{fileName} · {words} words · {characters} chars</p>
+    <h1>See the Unseen</h1>
   </div>
 
   <div class="action-strip">
@@ -60,8 +46,8 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 24px;
-    padding: 22px 24px;
+    gap: 20px;
+    padding: 18px 20px;
     border: 1px solid rgba(27, 23, 18, 0.12);
     border-radius: 24px;
     background: rgba(255, 250, 243, 0.72);
@@ -77,7 +63,7 @@
 
   .headline {
     display: grid;
-    gap: 6px;
+    gap: 4px;
   }
 
   .eyebrow {
@@ -98,29 +84,15 @@
   }
 
   h1 {
-    font-size: clamp(1.8rem, 2vw, 2.6rem);
+    font-size: clamp(1.65rem, 1.9vw, 2.35rem);
     line-height: 1;
-  }
-
-  .title-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .file-meta {
-    color: rgba(27, 23, 18, 0.72);
-  }
-
-  :global(html[data-theme="dark"]) .file-meta {
-    color: rgba(243, 239, 228, 0.7);
   }
 
   .action-strip {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
   }
 
@@ -134,7 +106,7 @@
       transform 160ms ease,
       border-color 160ms ease,
       background 160ms ease;
-    padding: 0.8rem 1.1rem;
+    padding: 0.68rem 0.95rem;
     cursor: pointer;
   }
 
@@ -164,17 +136,15 @@
     border-color: #c7582a;
   }
 
-  .status-pill,
-  .dirty-pill {
+  .status-pill {
     display: inline-flex;
     align-items: center;
     border-radius: 999px;
-    padding: 0.56rem 0.92rem;
-    font-size: 0.9rem;
+    padding: 0.48rem 0.82rem;
+    font-size: 0.86rem;
   }
 
-  .status-pill.neutral,
-  .dirty-pill {
+  .status-pill.neutral {
     background: rgba(27, 23, 18, 0.06);
   }
 
@@ -188,8 +158,7 @@
     color: #b5431b;
   }
 
-  :global(html[data-theme="dark"]) .status-pill.neutral,
-  :global(html[data-theme="dark"]) .dirty-pill {
+  :global(html[data-theme="dark"]) .status-pill.neutral {
     background: rgba(243, 239, 228, 0.08);
   }
 

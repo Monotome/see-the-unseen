@@ -85,10 +85,6 @@
       revealRange,
     }),
   );
-  const words = $derived(
-    activeTab.fileContent.trim() ? activeTab.fileContent.trim().split(/\s+/).length : 0,
-  );
-  const characters = $derived(activeTab.fileContent.length);
   const protectionLabel = $derived(isProtected ? "Protected" : "Visible");
   const protectionTone = $derived<"danger" | "safe">(isProtected ? "danger" : "safe");
   const saveLabel = $derived(
@@ -476,10 +472,6 @@
 <main class="shell">
   <section class="frame">
     <AppHeader
-      {fileName}
-      {words}
-      {characters}
-      isDirty={activeTab.isDirty}
       {protectionLabel}
       {protectionTone}
       {saveLabel}
@@ -506,7 +498,6 @@
         {displayText}
         scrollTop={activeTab.scrollTop}
         scrollLeft={activeTab.scrollLeft}
-        {focusRadius}
         onInput={markDirty}
         onSyncMetrics={syncEditorMetrics}
         onCompositionStart={() => {

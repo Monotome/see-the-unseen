@@ -56,8 +56,8 @@
   .tabbar {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 0 4px;
+    gap: 4px;
+    padding: 0 2px;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -70,11 +70,11 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 0.52rem 0.8rem 0.52rem 1rem;
-    border-radius: 999px;
-    border: 1px solid rgba(27, 23, 18, 0.12);
-    background: rgba(255, 250, 243, 0.52);
-    color: rgba(27, 23, 18, 0.6);
+    padding: 0.42rem 0.7rem 0.42rem 0.88rem;
+    border-radius: 16px 16px 12px 12px;
+    border: 1px solid rgba(27, 23, 18, 0.08);
+    background: rgba(255, 250, 243, 0.28);
+    color: rgba(27, 23, 18, 0.58);
     font-size: 0.88rem;
     white-space: nowrap;
     cursor: pointer;
@@ -86,31 +86,31 @@
   }
 
   :global(html[data-theme="dark"]) .tab {
-    border-color: rgba(243, 239, 228, 0.08);
-    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(243, 239, 228, 0.06);
+    background: rgba(255, 255, 255, 0.02);
     color: rgba(243, 239, 228, 0.5);
   }
 
   .tab:hover {
-    border-color: rgba(205, 98, 38, 0.4);
+    border-color: rgba(205, 98, 38, 0.32);
     color: inherit;
   }
 
   .tab-active {
-    border-color: rgba(199, 88, 42, 0.5);
-    background: rgba(255, 250, 243, 0.88);
+    border-color: rgba(199, 88, 42, 0.42);
+    background: rgba(255, 250, 243, 0.72);
     color: #1b1712;
     font-weight: 500;
   }
 
   :global(html[data-theme="dark"]) .tab-active {
-    border-color: rgba(255, 157, 120, 0.45);
-    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 157, 120, 0.35);
+    background: rgba(255, 255, 255, 0.05);
     color: #f3efe4;
   }
 
   .tab-label {
-    max-width: 140px;
+    max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -131,13 +131,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     border: 0;
     background: transparent;
     color: inherit;
-    font-size: 1rem;
+    font-size: 0.95rem;
     line-height: 1;
     padding: 0;
     cursor: pointer;
@@ -159,12 +159,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    border: 1px dashed rgba(27, 23, 18, 0.22);
+    border: 1px dashed rgba(27, 23, 18, 0.18);
     background: transparent;
-    color: rgba(27, 23, 18, 0.5);
+    color: rgba(27, 23, 18, 0.45);
     font-size: 1.2rem;
     line-height: 1;
     cursor: pointer;
@@ -176,12 +176,12 @@
   }
 
   :global(html[data-theme="dark"]) .tab-new {
-    border-color: rgba(243, 239, 228, 0.2);
+    border-color: rgba(243, 239, 228, 0.16);
     color: rgba(243, 239, 228, 0.45);
   }
 
   .tab-new:hover {
-    border-color: rgba(205, 98, 38, 0.55);
+    border-color: rgba(205, 98, 38, 0.42);
     color: #c7582a;
     background: rgba(199, 88, 42, 0.08);
   }

@@ -5,7 +5,6 @@
     displayText,
     scrollTop,
     scrollLeft,
-    focusRadius,
     onInput,
     onSyncMetrics,
     onCompositionStart,
@@ -16,7 +15,6 @@
     displayText: string;
     scrollTop: number;
     scrollLeft: number;
-    focusRadius: number;
     onInput: () => void;
     onSyncMetrics: () => void;
     onCompositionStart: () => void;
@@ -28,9 +26,7 @@
   <div class="editor-toolbar">
     <div>
       <p class="panel-label">Masked editor</p>
-      <p class="panel-copy">Hotkeys: Ctrl+Shift+H toggle privacy, Ctrl+, open settings, Ctrl+Shift+S save as.</p>
     </div>
-    <div class="window-chip">Window {focusRadius * 2} chars</div>
   </div>
 
   <div class="editor-surface">
@@ -87,13 +83,12 @@
 
   .editor-toolbar {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
     gap: 16px;
-    padding: 22px 24px 0;
+    padding: 18px 20px 0;
   }
 
-  .panel-label,
-  .panel-copy {
+  .panel-label {
     margin: 0;
   }
 
@@ -104,34 +99,13 @@
     color: #8d5c3f;
   }
 
-  .panel-copy {
-    color: rgba(27, 23, 18, 0.72);
-  }
-
   :global(html[data-theme="dark"]) .panel-label {
     color: #d1a97d;
   }
 
-  :global(html[data-theme="dark"]) .panel-copy {
-    color: rgba(243, 239, 228, 0.7);
-  }
-
-  .window-chip {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 0.56rem 0.92rem;
-    font-size: 0.9rem;
-    background: rgba(27, 23, 18, 0.06);
-  }
-
-  :global(html[data-theme="dark"]) .window-chip {
-    background: rgba(243, 239, 228, 0.08);
-  }
-
   .editor-surface {
     position: relative;
-    margin: 18px 24px 24px;
+    margin: 16px 20px 20px;
     min-height: 0;
     flex: 1;
     border-radius: 22px;
