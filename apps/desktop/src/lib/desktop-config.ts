@@ -55,6 +55,7 @@ export type Tab = {
   fileContent: string;
   filePath: string | null;
   isDirty: boolean;
+  isProtected: boolean;
   saveState: SaveState;
   selectionStart: number;
   selectionEnd: number;
@@ -70,6 +71,7 @@ export function createTab(overrides: Partial<Tab> = {}): Tab {
     fileContent: "",
     filePath: null,
     isDirty: false,
+    isProtected: true,
     saveState: "idle",
     selectionStart: 0,
     selectionEnd: 0,

@@ -5,6 +5,7 @@
     displayText,
     scrollTop,
     scrollLeft,
+    isProtected,
     words = 0,
     characters = 0,
     showWordCount = false,
@@ -18,6 +19,7 @@
     displayText: string;
     scrollTop: number;
     scrollLeft: number;
+    isProtected: boolean;
     words?: number;
     characters?: number;
     showWordCount?: boolean;
@@ -28,7 +30,7 @@
   } = $props();
 </script>
 
-<div class="editor-card">
+<div class:protected={isProtected} class:visible={!isProtected} class="editor-card">
   <div class="editor-toolbar">
     <div>
       <p class="panel-label">Masked editor</p>
@@ -78,16 +80,39 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid rgba(27, 23, 18, 0.12);
+    border: 1px solid rgba(27, 23, 18, 0.2);
     border-radius: 28px;
     background: rgba(255, 250, 243, 0.74);
     backdrop-filter: blur(18px);
+    transition:
+      border-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .editor-card.protected {
+    border-color: rgba(217, 71, 61, 1);
+    box-shadow: 0 0 0 2px rgba(217, 71, 61, 0.26), 0 24px 60px rgba(83, 52, 28, 0.12);
+  }
+
+  .editor-card.visible {
+    border-color: rgba(29, 138, 103, 1);
+    box-shadow: 0 0 0 2px rgba(29, 138, 103, 0.24), 0 24px 60px rgba(83, 52, 28, 0.12);
   }
 
   :global(html[data-theme="dark"]) .editor-card {
-    border-color: rgba(243, 239, 228, 0.08);
+    border-color: rgba(243, 239, 228, 0.16);
     background: rgba(21, 27, 24, 0.82);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  }
+
+  :global(html[data-theme="dark"]) .editor-card.protected {
+    border-color: rgba(255, 129, 110, 1);
+    box-shadow: 0 0 0 2px rgba(255, 129, 110, 0.24), 0 24px 60px rgba(0, 0, 0, 0.28);
+  }
+
+  :global(html[data-theme="dark"]) .editor-card.visible {
+    border-color: rgba(124, 207, 185, 1);
+    box-shadow: 0 0 0 2px rgba(124, 207, 185, 0.22), 0 24px 60px rgba(0, 0, 0, 0.28);
   }
 
   .editor-toolbar {
@@ -129,7 +154,7 @@
     min-height: 0;
     flex: 1;
     border-radius: 22px;
-    border: 1px solid rgba(27, 23, 18, 0.08);
+    border: 1px solid rgba(27, 23, 18, 0.18);
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent),
       rgba(255, 255, 255, 0.54);
@@ -137,7 +162,7 @@
   }
 
   :global(html[data-theme="dark"]) .editor-surface {
-    border-color: rgba(243, 239, 228, 0.08);
+    border-color: rgba(243, 239, 228, 0.2);
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
       rgba(8, 11, 10, 0.42);

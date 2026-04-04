@@ -1,14 +1,12 @@
 <script lang="ts">
   let {
     saveLabel,
-    isProtected,
     onNew,
     onOpen,
     onSave,
     onToggleSettings,
   }: {
     saveLabel: string;
-    isProtected: boolean;
     onNew: () => void;
     onOpen: () => void;
     onSave: () => void;
@@ -40,11 +38,6 @@
   </div>
 
   <div class="action-strip">
-    <span
-      class="protect-dot"
-      class:protected={isProtected}
-      title={isProtected ? "Protected" : "Visible"}
-    ></span>
     <span class="status-pill neutral">{saveLabel}</span>
 
     <div class="menu-anchor">
@@ -169,36 +162,6 @@
     justify-content: flex-end;
     gap: 10px;
     flex-wrap: wrap;
-  }
-
-  /* Protection dot */
-  .protect-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: #266b5a;
-    box-shadow: 0 0 0 3px rgba(38, 107, 90, 0.2);
-    transition:
-      background 220ms ease,
-      box-shadow 220ms ease;
-    cursor: default;
-  }
-
-  .protect-dot.protected {
-    background: #c7582a;
-    box-shadow: 0 0 0 3px rgba(199, 88, 42, 0.22);
-  }
-
-  :global(html[data-theme="dark"]) .protect-dot {
-    background: #7ccfb9;
-    box-shadow: 0 0 0 3px rgba(124, 207, 185, 0.2);
-  }
-
-  :global(html[data-theme="dark"]) .protect-dot.protected {
-    background: #ff9d78;
-    box-shadow: 0 0 0 3px rgba(255, 157, 120, 0.2);
   }
 
   /* Save status pill */

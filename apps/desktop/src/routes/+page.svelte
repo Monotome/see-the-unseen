@@ -44,7 +44,6 @@
 
   // --- Global (window-level) state ---
   let settings = $state<Settings>({ ...defaultSettings });
-  let isProtected = $state(true);
   let settingsOpen = $state(false);
   let systemPrefersDark = $state(false);
   let isComposing = $state(false);
@@ -82,7 +81,7 @@
       text: activeTab.fileContent,
       cursorIndex: activeTab.selectionEnd,
       radius: focusRadius,
-      isProtected,
+      isProtected: activeTab.isProtected,
       sessionSeed: activeTab.sessionSeed,
       revealRange,
     }),
@@ -127,6 +126,7 @@
   function setTabContent(tab: Tab, content: string) {
     tab.fileContent = content;
     tab.isDirty = false;
+    tab.isProtected = true;
     tab.saveState = "idle";
     tab.lastError = "";
   }
@@ -259,7 +259,6 @@
       const contents = await readTextFile(selected);
       activeTab.filePath = selected;
       setTabContent(activeTab, contents);
-      isProtected = true;
       focusEditor();
     } catch (error) {
       activeTab.lastError =
@@ -272,12 +271,11 @@
 
     activeTab.filePath = null;
     setTabContent(activeTab, "");
-    isProtected = true;
     focusEditor();
   }
 
   function toggleProtection() {
-    isProtected = !isProtected;
+    activeTab.isProtected = !activeTab.isProtected;
     focusEditor();
   }
 
@@ -442,7 +440,7 @@
 
       const unlistenBlur = await listen(TauriEvent.WINDOW_BLUR, () => {
         if (settings.altTabProtect) {
-          isProtected = true;
+          activeTab.isProtected = true;
         }
       });
       cleanups.push(unlistenBlur);
@@ -478,7 +476,7 @@
 
   $effect(() => {
     if (!hydrated || !appWindow) return;
-    void appWindow.setContentProtected(settings.screenshotProtect && isProtected);
+    void appWindow.setContentProtected(settings.screenshotProtect && activeTab.isProtected);
   });
 
   $effect(() => {
@@ -500,7 +498,6 @@
   <section class="frame">
     <AppHeader
       {saveLabel}
-      {isProtected}
       onNew={newFile}
       onOpen={openFile}
       onSave={() => void saveFile(false)}
@@ -522,6 +519,7 @@
         {displayText}
         scrollTop={activeTab.scrollTop}
         scrollLeft={activeTab.scrollLeft}
+        isProtected={activeTab.isProtected}
         {words}
         {characters}
         showWordCount={settings.showWordCount}

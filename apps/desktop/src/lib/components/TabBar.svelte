@@ -26,6 +26,8 @@
   {#each tabs as tab (tab.id)}
     <div
       class="tab"
+      class:protected={tab.isProtected}
+      class:visible={!tab.isProtected}
       class:tab-active={tab.id === activeTabId}
       role="tab"
       aria-selected={tab.id === activeTabId}
@@ -57,7 +59,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 0 2px;
+    padding: 4px 2px 0;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -70,11 +72,11 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 0.42rem 0.7rem 0.42rem 0.88rem;
+    padding: 0.42rem 0.7rem 0.42rem 0.82rem;
     border-radius: 16px 16px 12px 12px;
-    border: 1px solid rgba(27, 23, 18, 0.08);
-    background: rgba(255, 250, 243, 0.28);
-    color: rgba(27, 23, 18, 0.58);
+    border: 1px solid rgba(27, 23, 18, 0.1);
+    background: transparent;
+    color: rgba(27, 23, 18, 0.38);
     font-size: 0.88rem;
     white-space: nowrap;
     cursor: pointer;
@@ -82,31 +84,87 @@
     transition:
       background 140ms ease,
       border-color 140ms ease,
-      color 140ms ease;
+      color 140ms ease,
+      box-shadow 140ms ease,
+      transform 140ms ease;
   }
 
   :global(html[data-theme="dark"]) .tab {
-    border-color: rgba(243, 239, 228, 0.06);
-    background: rgba(255, 255, 255, 0.02);
-    color: rgba(243, 239, 228, 0.5);
+    border-color: rgba(243, 239, 228, 0.1);
+    background: transparent;
+    color: rgba(243, 239, 228, 0.32);
   }
 
-  .tab:hover {
-    border-color: rgba(205, 98, 38, 0.32);
-    color: inherit;
+  .tab:hover:not(.tab-active) {
+    background: rgba(255, 250, 243, 0.2);
+    color: rgba(27, 23, 18, 0.6);
   }
 
+  :global(html[data-theme="dark"]) .tab:hover:not(.tab-active) {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(243, 239, 228, 0.55);
+  }
+
+  /* Inactive tabs: dimmed state border — visible but not screaming */
+  .tab.visible {
+    border-color: rgba(29, 138, 103, 0.48);
+  }
+
+  .tab.protected {
+    border-color: rgba(217, 71, 61, 0.48);
+  }
+
+  :global(html[data-theme="dark"]) .tab.visible {
+    border-color: rgba(124, 207, 185, 0.42);
+  }
+
+  :global(html[data-theme="dark"]) .tab.protected {
+    border-color: rgba(255, 129, 110, 0.44);
+  }
+
+  /* Active tab: solid paper card that clearly pops */
   .tab-active {
-    border-color: rgba(199, 88, 42, 0.42);
-    background: rgba(255, 250, 243, 0.72);
+    position: relative;
+    z-index: 1;
+    transform: translateY(-2px);
+    background: rgba(255, 250, 243, 0.96);
     color: #1b1712;
-    font-weight: 500;
+    font-weight: 600;
+    box-shadow: 0 4px 18px rgba(27, 23, 18, 0.16);
+  }
+
+  .tab-active.visible {
+    border-color: rgba(29, 138, 103, 1);
+    box-shadow:
+      0 4px 18px rgba(27, 23, 18, 0.16),
+      0 0 0 2px rgba(29, 138, 103, 0.2);
+  }
+
+  .tab-active.protected {
+    border-color: rgba(217, 71, 61, 1);
+    box-shadow:
+      0 4px 18px rgba(27, 23, 18, 0.16),
+      0 0 0 2px rgba(217, 71, 61, 0.22);
   }
 
   :global(html[data-theme="dark"]) .tab-active {
-    border-color: rgba(255, 157, 120, 0.35);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(40, 36, 28, 0.96);
     color: #f3efe4;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  }
+
+  :global(html[data-theme="dark"]) .tab-active.visible {
+    border-color: rgba(124, 207, 185, 1);
+    box-shadow:
+      0 4px 18px rgba(0, 0, 0, 0.35),
+      0 0 0 2px rgba(124, 207, 185, 0.22);
+  }
+
+  :global(html[data-theme="dark"]) .tab-active.protected {
+    border-color: rgba(255, 129, 110, 1);
+    box-shadow:
+      0 4px 18px rgba(0, 0, 0, 0.35),
+      0 0 0 2px rgba(255, 129, 110, 0.24);
   }
 
   .tab-label {
