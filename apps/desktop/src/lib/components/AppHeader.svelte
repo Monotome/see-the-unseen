@@ -1,25 +1,36 @@
 <script lang="ts">
   let {
-    protectionLabel,
-    protectionTone,
     saveLabel,
     isProtected,
     onNew,
     onOpen,
     onSave,
-    onToggleProtection,
     onToggleSettings,
   }: {
-    protectionLabel: string;
-    protectionTone: "danger" | "safe";
     saveLabel: string;
     isProtected: boolean;
     onNew: () => void;
     onOpen: () => void;
     onSave: () => void;
-    onToggleProtection: () => void;
     onToggleSettings: () => void;
   } = $props();
+
+  let menuOpen = $state(false);
+
+  function closeMenu() {
+    menuOpen = false;
+  }
+
+  function handleMenuKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      closeMenu();
+    }
+  }
+
+  function handleMenuItemClick(action: () => void) {
+    closeMenu();
+    action();
+  }
 </script>
 
 <header class="topbar">
@@ -29,20 +40,84 @@
   </div>
 
   <div class="action-strip">
-    <span class={`status-pill ${protectionTone}`}>{protectionLabel}</span>
+    <span
+      class="protect-dot"
+      class:protected={isProtected}
+      title={isProtected ? "Protected" : "Visible"}
+    ></span>
     <span class="status-pill neutral">{saveLabel}</span>
-    <button type="button" class="ghost" onclick={onNew}>New</button>
-    <button type="button" class="ghost" onclick={onOpen}>Open</button>
-    <button type="button" class="ghost" onclick={onSave}>Save</button>
-    <button type="button" class:primary={!isProtected} class:danger={isProtected} onclick={onToggleProtection}>
-      {isProtected ? "Reveal" : "Protect"}
-    </button>
-    <button type="button" class="ghost" onclick={onToggleSettings}>Settings</button>
+
+    <div class="menu-anchor">
+      <button
+        type="button"
+        class="ghost hamburger"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-label="Open menu"
+        onclick={() => (menuOpen = !menuOpen)}
+        onkeydown={handleMenuKeydown}
+      >
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+
+      {#if menuOpen}
+        <div
+          class="backdrop"
+          role="presentation"
+          onclick={closeMenu}
+          onkeydown={handleMenuKeydown}
+        ></div>
+
+        <div class="dropdown" role="menu" tabindex="-1" onkeydown={handleMenuKeydown}>
+          <button
+            type="button"
+            role="menuitem"
+            class="menu-item"
+            onclick={() => handleMenuItemClick(onNew)}
+          >
+            <span class="item-label">New note</span>
+            <kbd>Ctrl+N</kbd>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            class="menu-item"
+            onclick={() => handleMenuItemClick(onOpen)}
+          >
+            <span class="item-label">Open…</span>
+            <kbd>Ctrl+O</kbd>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            class="menu-item"
+            onclick={() => handleMenuItemClick(onSave)}
+          >
+            <span class="item-label">Save</span>
+            <kbd>Ctrl+S</kbd>
+          </button>
+          <div class="menu-divider" role="separator"></div>
+          <button
+            type="button"
+            role="menuitem"
+            class="menu-item"
+            onclick={() => handleMenuItemClick(onToggleSettings)}
+          >
+            <span class="item-label">Settings</span>
+            <kbd>Ctrl+,</kbd>
+          </button>
+        </div>
+      {/if}
+    </div>
   </div>
 </header>
 
 <style>
   .topbar {
+    position: relative;
+    z-index: 20;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -92,8 +167,55 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
+  }
+
+  /* Protection dot */
+  .protect-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #266b5a;
+    box-shadow: 0 0 0 3px rgba(38, 107, 90, 0.2);
+    transition:
+      background 220ms ease,
+      box-shadow 220ms ease;
+    cursor: default;
+  }
+
+  .protect-dot.protected {
+    background: #c7582a;
+    box-shadow: 0 0 0 3px rgba(199, 88, 42, 0.22);
+  }
+
+  :global(html[data-theme="dark"]) .protect-dot {
+    background: #7ccfb9;
+    box-shadow: 0 0 0 3px rgba(124, 207, 185, 0.2);
+  }
+
+  :global(html[data-theme="dark"]) .protect-dot.protected {
+    background: #ff9d78;
+    box-shadow: 0 0 0 3px rgba(255, 157, 120, 0.2);
+  }
+
+  /* Save status pill */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.48rem 0.82rem;
+    font-size: 0.86rem;
+  }
+
+  .status-pill.neutral {
+    background: rgba(27, 23, 18, 0.06);
+  }
+
+  :global(html[data-theme="dark"]) .status-pill.neutral {
+    background: rgba(243, 239, 228, 0.08);
   }
 
   button {
@@ -124,52 +246,129 @@
     background: transparent;
   }
 
-  .primary {
-    background: #266b5a;
-    color: #f5f1e9;
-    border-color: #266b5a;
-  }
-
-  .danger {
-    background: #c7582a;
-    color: #fff8f5;
-    border-color: #c7582a;
-  }
-
-  .status-pill {
-    display: inline-flex;
+  .hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    border-radius: 999px;
-    padding: 0.48rem 0.82rem;
-    font-size: 0.86rem;
+    gap: 4px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 12px;
   }
 
-  .status-pill.neutral {
+  .bar {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+  }
+
+  /* Menu anchor for dropdown positioning */
+  .menu-anchor {
+    position: relative;
+  }
+
+  /* Transparent backdrop for click-outside */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+  }
+
+  /* Dropdown panel */
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 31;
+    min-width: 200px;
+    padding: 6px;
+    border-radius: 16px;
+    border: 1px solid rgba(27, 23, 18, 0.12);
+    background: rgba(255, 250, 243, 0.97);
+    backdrop-filter: blur(24px);
+    box-shadow:
+      0 8px 32px rgba(83, 52, 28, 0.16),
+      0 2px 8px rgba(83, 52, 28, 0.08);
+    animation: drop-in 140ms ease;
+  }
+
+  :global(html[data-theme="dark"]) .dropdown {
+    border-color: rgba(243, 239, 228, 0.1);
+    background: rgba(24, 30, 27, 0.97);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.36),
+      0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  @keyframes drop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    width: 100%;
+    padding: 0.62rem 0.9rem;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+
+  .menu-item:hover {
+    transform: none;
+    border-color: transparent;
     background: rgba(27, 23, 18, 0.06);
   }
 
-  .status-pill.safe {
-    background: rgba(38, 107, 90, 0.16);
-    color: #266b5a;
-  }
-
-  .status-pill.danger {
-    background: rgba(199, 88, 42, 0.16);
-    color: #b5431b;
-  }
-
-  :global(html[data-theme="dark"]) .status-pill.neutral {
+  :global(html[data-theme="dark"]) .menu-item:hover {
     background: rgba(243, 239, 228, 0.08);
   }
 
-  :global(html[data-theme="dark"]) .status-pill.safe {
-    color: #7ccfb9;
-    background: rgba(124, 207, 185, 0.16);
+  .item-label {
+    flex: 1;
   }
 
-  :global(html[data-theme="dark"]) .status-pill.danger {
-    color: #ff9d78;
-    background: rgba(255, 157, 120, 0.14);
+  kbd {
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: rgba(27, 23, 18, 0.5);
+    background: rgba(27, 23, 18, 0.06);
+    padding: 0.18rem 0.45rem;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  :global(html[data-theme="dark"]) kbd {
+    color: rgba(243, 239, 228, 0.45);
+    background: rgba(243, 239, 228, 0.08);
+  }
+
+  .menu-divider {
+    height: 1px;
+    margin: 4px 6px;
+    background: rgba(27, 23, 18, 0.08);
+  }
+
+  :global(html[data-theme="dark"]) .menu-divider {
+    background: rgba(243, 239, 228, 0.08);
   }
 
   @media (max-width: 1080px) {

@@ -7,13 +7,15 @@
   import { Store } from "@tauri-apps/plugin-store";
   import AppHeader from "$lib/components/AppHeader.svelte";
   import EditorPane from "$lib/components/EditorPane.svelte";
-  import SettingsPanel from "$lib/components/SettingsPanel.svelte";
+  import SettingsModal from "$lib/components/SettingsModal.svelte";
   import ConfirmModal from "$lib/components/ConfirmModal.svelte";
   import TabBar from "$lib/components/TabBar.svelte";
   import {
     createTab,
+    defaultHotkeys,
     defaultSettings,
     windowSizeOptions,
+    type HotkeyBinding,
     type Settings,
     type Tab,
   } from "$lib/desktop-config";
@@ -85,8 +87,6 @@
       revealRange,
     }),
   );
-  const protectionLabel = $derived(isProtected ? "Protected" : "Visible");
-  const protectionTone = $derived<"danger" | "safe">(isProtected ? "danger" : "safe");
   const saveLabel = $derived(
     activeTab.saveState === "saving"
       ? "Saving"
@@ -100,6 +100,13 @@
               ? "Auto-save ready"
               : "Idle",
   );
+
+  const words = $derived(
+    activeTab.fileContent.trim() === ""
+      ? 0
+      : activeTab.fileContent.trim().split(/\s+/).length,
+  );
+  const characters = $derived(activeTab.fileContent.length);
 
   // --- Editor helpers ---
 
@@ -322,60 +329,76 @@
 
   // --- Keyboard shortcuts ---
 
+  function matchesHotkey(event: KeyboardEvent, b: HotkeyBinding): boolean {
+    return (
+      event.key.toLowerCase() === b.key &&
+      (event.ctrlKey || event.metaKey) === b.ctrl &&
+      event.shiftKey === b.shift &&
+      event.altKey === b.alt
+    );
+  }
+
   function handleShortcuts(event: KeyboardEvent) {
-    const usesCommand = event.ctrlKey || event.metaKey;
-    if (!usesCommand) return;
+    const hk = settings.hotkeys;
 
-    const lowerKey = event.key.toLowerCase();
-
-    if (lowerKey === "s") {
+    if (matchesHotkey(event, hk.saveAs)) {
       event.preventDefault();
-      void saveFile(event.shiftKey);
+      void saveFile(true);
       return;
     }
 
-    if (lowerKey === "o") {
+    if (matchesHotkey(event, hk.save)) {
+      event.preventDefault();
+      void saveFile(false);
+      return;
+    }
+
+    if (matchesHotkey(event, hk.open)) {
       event.preventDefault();
       void openFile();
       return;
     }
 
-    if (lowerKey === "n") {
+    if (matchesHotkey(event, hk.new)) {
       event.preventDefault();
       void newFile();
       return;
     }
 
-    if (lowerKey === "t") {
+    if (matchesHotkey(event, hk.newTab)) {
       event.preventDefault();
       addTab();
       return;
     }
 
-    if (lowerKey === "w") {
+    if (matchesHotkey(event, hk.closeTab)) {
       event.preventDefault();
       void closeTab(activeTabId);
       return;
     }
 
-    if (lowerKey === "tab") {
+    if (matchesHotkey(event, hk.nextTab)) {
       event.preventDefault();
       const currentIndex = tabs.findIndex((t) => t.id === activeTabId);
-      const nextIndex = event.shiftKey
-        ? (currentIndex - 1 + tabs.length) % tabs.length
-        : (currentIndex + 1) % tabs.length;
-      switchToTab(tabs[nextIndex].id);
+      switchToTab(tabs[(currentIndex + 1) % tabs.length].id);
       return;
     }
 
-    if (lowerKey === ",") {
+    if (matchesHotkey(event, hk.prevTab)) {
+      event.preventDefault();
+      const currentIndex = tabs.findIndex((t) => t.id === activeTabId);
+      switchToTab(tabs[(currentIndex - 1 + tabs.length) % tabs.length].id);
+      return;
+    }
+
+    if (matchesHotkey(event, hk.toggleSettings)) {
       event.preventDefault();
       settingsOpen = !settingsOpen;
-      focusEditor();
+      if (!settingsOpen) focusEditor();
       return;
     }
 
-    if (event.shiftKey && lowerKey === "h") {
+    if (matchesHotkey(event, hk.toggleProtection)) {
       event.preventDefault();
       toggleProtection();
     }
@@ -410,7 +433,11 @@
 
       const storedSettings = await settingsStore.get<Partial<Settings>>("settings");
       if (storedSettings) {
-        settings = { ...defaultSettings, ...storedSettings };
+        settings = {
+          ...defaultSettings,
+          ...storedSettings,
+          hotkeys: { ...defaultHotkeys, ...storedSettings.hotkeys },
+        };
       }
 
       const unlistenBlur = await listen(TauriEvent.WINDOW_BLUR, () => {
@@ -472,14 +499,11 @@
 <main class="shell">
   <section class="frame">
     <AppHeader
-      {protectionLabel}
-      {protectionTone}
       {saveLabel}
       {isProtected}
       onNew={newFile}
       onOpen={openFile}
       onSave={() => void saveFile(false)}
-      onToggleProtection={toggleProtection}
       onToggleSettings={() => (settingsOpen = !settingsOpen)}
     />
 
@@ -491,13 +515,16 @@
       onNewTab={addTab}
     />
 
-    <section class="workspace" class:workspace-full={!settingsOpen}>
+    <section class="workspace">
       <EditorPane
         bind:fileContent={activeTab.fileContent}
         bind:editorElement
         {displayText}
         scrollTop={activeTab.scrollTop}
         scrollLeft={activeTab.scrollLeft}
+        {words}
+        {characters}
+        showWordCount={settings.showWordCount}
         onInput={markDirty}
         onSyncMetrics={syncEditorMetrics}
         onCompositionStart={() => {
@@ -509,21 +536,22 @@
         }}
       />
 
-      {#if settingsOpen}
-        <SettingsPanel
-          bind:settings
-          {settingsOpen}
-          {windowSizeOptions}
-          lastError={activeTab.lastError}
-          onClose={() => {
-            settingsOpen = false;
-            focusEditor();
-          }}
-        />
-      {/if}
+
     </section>
   </section>
 </main>
+
+{#if settingsOpen}
+  <SettingsModal
+    bind:settings
+    {windowSizeOptions}
+    lastError={activeTab.lastError}
+    onClose={() => {
+      settingsOpen = false;
+      focusEditor();
+    }}
+  />
+{/if}
 
 {#if confirmState}
   <ConfirmModal
@@ -580,18 +608,13 @@
     flex: 1;
     min-height: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
-    gap: 18px;
-  }
-
-  .workspace-full {
     grid-template-columns: 1fr;
+    gap: 18px;
   }
 
   @media (max-width: 1080px) {
     .workspace {
       grid-template-columns: 1fr;
-      display: grid;
     }
 
     .shell {

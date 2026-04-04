@@ -5,6 +5,9 @@
     displayText,
     scrollTop,
     scrollLeft,
+    words = 0,
+    characters = 0,
+    showWordCount = false,
     onInput,
     onSyncMetrics,
     onCompositionStart,
@@ -15,6 +18,9 @@
     displayText: string;
     scrollTop: number;
     scrollLeft: number;
+    words?: number;
+    characters?: number;
+    showWordCount?: boolean;
     onInput: () => void;
     onSyncMetrics: () => void;
     onCompositionStart: () => void;
@@ -27,6 +33,9 @@
     <div>
       <p class="panel-label">Masked editor</p>
     </div>
+    {#if showWordCount}
+      <span class="count-chip">{words} words &middot; {characters} chars</span>
+    {/if}
   </div>
 
   <div class="editor-surface">
@@ -84,8 +93,19 @@
   .editor-toolbar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 16px;
     padding: 18px 20px 0;
+  }
+
+  .count-chip {
+    font-size: 0.76rem;
+    color: rgba(27, 23, 18, 0.45);
+    white-space: nowrap;
+  }
+
+  :global(html[data-theme="dark"]) .count-chip {
+    color: rgba(243, 239, 228, 0.38);
   }
 
   .panel-label {
