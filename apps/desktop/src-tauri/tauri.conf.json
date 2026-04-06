@@ -33,6 +33,11 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "fileAssociations": [
+      { "ext": ["stn"], "description": "See the Unseen Note",  "role": "Editor" },
+      { "ext": ["txt"], "description": "Text File",            "role": "Editor" },
+      { "ext": ["md"],  "description": "Markdown",             "role": "Editor" }
     ]
   }
 }

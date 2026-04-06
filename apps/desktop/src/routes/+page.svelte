@@ -277,6 +277,31 @@
     }
   }
 
+  async function loadFileIntoTab(filePath: string) {
+    if (filePath.endsWith(".stn")) {
+      const rawBytes = await readFile(filePath);
+      await showPasswordModal({
+        mode: "decrypt",
+        filename: basename(filePath),
+        submit: async (password) => {
+          const plaintext: string = await invoke("decrypt_content", {
+            password,
+            data: Array.from(rawBytes),
+          });
+          activeTab.filePath = filePath;
+          activeTab.encryptionPassword = password;
+          setTabContent(activeTab, plaintext);
+          focusEditor();
+        },
+      });
+    } else {
+      const contents = await readTextFile(filePath);
+      activeTab.filePath = filePath;
+      setTabContent(activeTab, contents);
+    }
+    focusEditor();
+  }
+
   async function openFile() {
     if (!(await maybeDiscardChanges("Open"))) return;
 
@@ -293,30 +318,7 @@
       });
 
       if (typeof selected !== "string") return;
-
-      if (selected.endsWith(".stn")) {
-        const rawBytes = await readFile(selected);
-        await showPasswordModal({
-          mode: "decrypt",
-          filename: basename(selected),
-          submit: async (password) => {
-            const plaintext: string = await invoke("decrypt_content", {
-              password,
-              data: Array.from(rawBytes),
-            });
-            activeTab.filePath = selected;
-            activeTab.encryptionPassword = password;
-            setTabContent(activeTab, plaintext);
-            focusEditor();
-          },
-        });
-      } else {
-        const contents = await readTextFile(selected);
-        activeTab.filePath = selected;
-        setTabContent(activeTab, contents);
-      }
-
-      focusEditor();
+      await loadFileIntoTab(selected);
     } catch (error) {
       activeTab.lastError =
         error instanceof Error ? error.message : "Unable to open this file.";
@@ -578,6 +580,35 @@
 
       const unlistenClose = await appWindow!.onCloseRequested(handleBeforeClose);
       cleanups.push(unlistenClose);
+
+      // Cold-start: consume a file path queued by the Rust backend before the
+      // webview was ready (Windows/Linux argv, or early macOS Apple Event).
+      const initialPath = await invoke<string | null>("take_open_file_request");
+      if (typeof initialPath === "string") {
+        if (await maybeDiscardChanges("Open")) {
+          try {
+            await loadFileIntoTab(initialPath);
+          } catch (error) {
+            activeTab.lastError =
+              error instanceof Error ? error.message : "Unable to open this file.";
+          }
+        }
+      }
+
+      // Hot-path: file opened while the app is already running.
+      const unlistenOpenFile = await listen<string>("open-file", (event) => {
+        void (async () => {
+          if (await maybeDiscardChanges("Open")) {
+            try {
+              await loadFileIntoTab(event.payload);
+            } catch (error) {
+              activeTab.lastError =
+                error instanceof Error ? error.message : "Unable to open this file.";
+            }
+          }
+        })();
+      });
+      cleanups.push(unlistenOpenFile);
 
       hydrated = true;
       focusEditor();
