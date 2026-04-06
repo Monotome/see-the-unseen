@@ -16,6 +16,7 @@
     createTab,
     defaultHotkeys,
     defaultSettings,
+    maskPersonaOptions,
     windowSizeOptions,
     type HotkeyBinding,
     type Settings,
@@ -115,6 +116,7 @@
       radius: focusRadius,
       isProtected: activeTab.isProtected,
       sessionSeed: activeTab.sessionSeed,
+      persona: settings.maskPersona,
       revealRange,
     }),
   );
@@ -673,6 +675,7 @@
   <SettingsModal
     bind:settings
     {windowSizeOptions}
+    {maskPersonaOptions}
     lastError={activeTab.lastError}
     onClose={() => {
       settingsOpen = false;

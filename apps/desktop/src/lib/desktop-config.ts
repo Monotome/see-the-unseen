@@ -1,4 +1,4 @@
-import type { WindowSize } from "$lib/masking";
+import type { MaskPersona, WindowSize } from "$lib/masking";
 
 export type ThemeMode = "system" | "light" | "dark";
 export type SaveState = "idle" | "saving" | "saved" | "error";
@@ -98,6 +98,7 @@ export type Settings = {
   showWordCount: boolean;
   theme: ThemeMode;
   windowSize: WindowSize;
+  maskPersona: MaskPersona;
   hotkeys: HotkeyMap;
 };
 
@@ -108,6 +109,7 @@ export const defaultSettings: Settings = {
   showWordCount: false,
   theme: "system",
   windowSize: "medium",
+  maskPersona: "english",
   hotkeys: defaultHotkeys,
 };
 
@@ -116,3 +118,10 @@ export const windowSizeOptions = [
   { value: "medium", label: "Medium", hint: "Balanced privacy while typing" },
   { value: "wide", label: "Wide", hint: "More context stays visible" },
 ] as const;
+
+export const maskPersonaOptions = [
+  { value: "english",  label: "English",    hint: "Weighted random English characters" },
+  { value: "lorem",   label: "Lorem Ipsum", hint: "Latin placeholder-style decoy text" },
+  { value: "code",    label: "Code",        hint: "Looks like obfuscated source code" },
+  { value: "finance", label: "Financial",   hint: "Numbers and symbols like a spreadsheet" },
+] as const satisfies ReadonlyArray<{ value: MaskPersona; label: string; hint: string }>;

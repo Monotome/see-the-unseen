@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { WindowSize } from "$lib/masking";
+  import type { MaskPersona, WindowSize } from "$lib/masking";
   import {
     ACTION_LABELS,
     defaultHotkeys,
@@ -12,11 +12,13 @@
   let {
     settings = $bindable(),
     windowSizeOptions,
+    maskPersonaOptions,
     lastError,
     onClose,
   }: {
     settings: Settings;
     windowSizeOptions: ReadonlyArray<{ value: WindowSize; label: string; hint: string }>;
+    maskPersonaOptions: ReadonlyArray<{ value: MaskPersona; label: string; hint: string }>;
     lastError: string;
     onClose: () => void;
   } = $props();
@@ -169,6 +171,18 @@
           </select>
           <p class="helper-copy">
             {windowSizeOptions.find((o) => o.value === settings.windowSize)?.hint}
+          </p>
+        </div>
+
+        <div class="field-group">
+          <label for="mask-persona">Masking persona</label>
+          <select id="mask-persona" bind:value={settings.maskPersona}>
+            {#each maskPersonaOptions as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+          <p class="helper-copy">
+            {maskPersonaOptions.find((o) => o.value === settings.maskPersona)?.hint}
           </p>
         </div>
 
