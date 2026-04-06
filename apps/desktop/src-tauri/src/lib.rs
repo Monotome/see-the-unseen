@@ -66,7 +66,15 @@ pub fn run() {
                             let _ = w.set_focus();
                         }
                     }
-                    "quit" => app.exit(0),
+                    // Show the window first so the user can see the dirty-tab
+                    // confirm dialog, then let the frontend decide whether to exit.
+                    "quit" => {
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                        let _ = app.emit("quit-requested", ());
+                    }
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {

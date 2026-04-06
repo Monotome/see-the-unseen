@@ -396,9 +396,15 @@
     focusEditor();
   }
 
-  async function handleBeforeClose(event: CloseRequestedEvent) {
+  // Shared dirty-check + save loop used by both the X button and tray Quit.
+  // Calls exitFn() when it is safe to proceed (no dirty tabs, or user confirmed).
+  async function confirmAndClose(exitFn: () => Promise<void>) {
     const dirtyTabs = tabs.filter((t) => t.isDirty && !(settings.autoSave && t.filePath));
-    if (dirtyTabs.length === 0) return;
+
+    if (dirtyTabs.length === 0) {
+      await exitFn();
+      return;
+    }
 
     const names = dirtyTabs
       .map((t) => (t.filePath ? basename(t.filePath) : "Untitled"))
@@ -413,18 +419,14 @@
       cancelLabel: "Cancel",
     });
 
-    // User cancelled → stay in app
-    if (result === "cancel") {
-      event.preventDefault();
+    if (result === "cancel") return;
+
+    if (result === "discard") {
+      await exitFn();
       return;
     }
 
-    // User chose Don't Save → let Tauri auto-destroy (no preventDefault)
-    if (result === "discard") return;
-
-    // User chose Save & Close → prevent auto-close, save, then destroy manually
-    event.preventDefault();
-
+    // Save & Close: iterate dirty tabs, abort if any save fails or is cancelled.
     const previousTabId = activeTabId;
 
     for (const tab of dirtyTabs) {
@@ -432,14 +434,24 @@
       const saved = await saveFile(false);
 
       if (!saved || tab.isDirty) {
-        // Save was cancelled or failed → abort close, stay in app
         activeTabId = previousTabId;
         focusEditor();
         return;
       }
     }
 
-    await appWindow?.destroy();
+    await exitFn();
+  }
+
+  // X button → hide to tray (never destroy).
+  async function handleBeforeClose(event: CloseRequestedEvent) {
+    event.preventDefault();
+    await confirmAndClose(async () => appWindow?.hide());
+  }
+
+  // Tray "Quit" → confirm dirty tabs, then destroy and exit.
+  async function handleQuitRequested() {
+    await confirmAndClose(async () => appWindow?.destroy());
   }
 
   // --- Keyboard shortcuts ---
@@ -580,6 +592,10 @@
 
       const unlistenClose = await appWindow!.onCloseRequested(handleBeforeClose);
       cleanups.push(unlistenClose);
+
+      // Tray "Quit" emits this event so we can check dirty tabs before exiting.
+      const unlistenQuit = await listen("quit-requested", () => void handleQuitRequested());
+      cleanups.push(unlistenQuit);
 
       // Cold-start: consume a file path queued by the Rust backend before the
       // webview was ready (Windows/Linux argv, or early macOS Apple Event).
