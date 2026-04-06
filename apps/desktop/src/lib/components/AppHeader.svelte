@@ -111,9 +111,9 @@
   .topbar {
     position: relative;
     z-index: 20;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     gap: 20px;
     padding: 18px 20px;
     border: 1px solid rgba(27, 23, 18, 0.12);
@@ -132,6 +132,7 @@
   .headline {
     display: grid;
     gap: 4px;
+    min-width: 0;
   }
 
   .eyebrow {
@@ -154,6 +155,7 @@
   h1 {
     font-size: clamp(1.65rem, 1.9vw, 2.35rem);
     line-height: 1;
+    min-width: 0;
   }
 
   .action-strip {
@@ -161,7 +163,9 @@
     align-items: center;
     justify-content: flex-end;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    justify-self: end;
+    white-space: nowrap;
   }
 
   /* Save status pill */
@@ -171,6 +175,7 @@
     border-radius: 999px;
     padding: 0.48rem 0.82rem;
     font-size: 0.86rem;
+    white-space: nowrap;
   }
 
   .status-pill.neutral {
@@ -336,12 +341,28 @@
 
   @media (max-width: 1080px) {
     .topbar {
-      display: grid;
-      grid-template-columns: 1fr;
+      gap: 16px;
+      padding: 16px 18px;
+    }
+
+    h1 {
+      font-size: clamp(1.45rem, 4.2vw, 2rem);
+    }
+  }
+
+  @media (max-width: 720px) {
+    .topbar {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
     }
 
     .action-strip {
-      justify-content: flex-start;
+      gap: 8px;
+    }
+
+    .status-pill {
+      padding: 0.42rem 0.68rem;
+      font-size: 0.8rem;
     }
   }
 </style>
