@@ -4,12 +4,14 @@
     onNew,
     onOpen,
     onSave,
+    onSaveEncrypted,
     onToggleSettings,
   }: {
     saveLabel: string;
     onNew: () => void;
     onOpen: () => void;
     onSave: () => void;
+    onSaveEncrypted: () => void;
     onToggleSettings: () => void;
   } = $props();
 
@@ -90,6 +92,15 @@
           >
             <span class="item-label">Save</span>
             <kbd>Ctrl+S</kbd>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            class="menu-item"
+            onclick={() => handleMenuItemClick(onSaveEncrypted)}
+          >
+            <span class="item-label">Save Encrypted…</span>
+            <kbd>Ctrl+Shift+E</kbd>
           </button>
           <div class="menu-divider" role="separator"></div>
           <button

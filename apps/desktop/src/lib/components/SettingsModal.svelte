@@ -32,7 +32,9 @@
     "closeTab",
     "nextTab",
     "prevTab",
+    "saveEncrypted",
     "toggleProtection",
+    "panicMask",
     "toggleSettings",
   ];
 

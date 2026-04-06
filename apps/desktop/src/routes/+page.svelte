@@ -3,12 +3,14 @@
   import { TauriEvent, listen } from "@tauri-apps/api/event";
   import { CloseRequestedEvent, getCurrentWindow } from "@tauri-apps/api/window";
   import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
-  import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+  import { readTextFile, writeTextFile, readFile, writeFile } from "@tauri-apps/plugin-fs";
+  import { invoke } from "@tauri-apps/api/core";
   import { Store } from "@tauri-apps/plugin-store";
   import AppHeader from "$lib/components/AppHeader.svelte";
   import EditorPane from "$lib/components/EditorPane.svelte";
   import SettingsModal from "$lib/components/SettingsModal.svelte";
   import ConfirmModal from "$lib/components/ConfirmModal.svelte";
+  import PasswordModal from "$lib/components/PasswordModal.svelte";
   import TabBar from "$lib/components/TabBar.svelte";
   import {
     createTab,
@@ -39,6 +41,21 @@
   function showConfirm(opts: Omit<ConfirmConfig, "resolve">): Promise<ConfirmResult> {
     return new Promise((resolve) => {
       confirmState = { ...opts, resolve };
+    });
+  }
+
+  // --- Password modal state ---
+  type PasswordConfig = {
+    mode: "encrypt" | "decrypt";
+    filename: string;
+    resolve: (password: string | null) => void;
+  };
+
+  let passwordState = $state<PasswordConfig | null>(null);
+
+  function showPasswordModal(opts: Omit<PasswordConfig, "resolve">): Promise<string | null> {
+    return new Promise((resolve) => {
+      passwordState = { ...opts, resolve };
     });
   }
 
@@ -251,14 +268,33 @@
         title: "Open note",
         multiple: false,
         directory: false,
-        filters: [{ name: "Text", extensions: ["txt", "md", "text"] }],
+        filters: [
+          { name: "Text", extensions: ["txt", "md", "text"] },
+          { name: "Encrypted Note", extensions: ["stn"] },
+          { name: "All Files", extensions: ["*"] },
+        ],
       });
 
       if (typeof selected !== "string") return;
 
-      const contents = await readTextFile(selected);
-      activeTab.filePath = selected;
-      setTabContent(activeTab, contents);
+      if (selected.endsWith(".stn")) {
+        const password = await showPasswordModal({ mode: "decrypt", filename: basename(selected) });
+        if (password === null) return;
+
+        const rawBytes = await readFile(selected);
+        const plaintext: string = await invoke("decrypt_content", {
+          password,
+          data: Array.from(rawBytes),
+        });
+        activeTab.filePath = selected;
+        activeTab.encryptionPassword = password;
+        setTabContent(activeTab, plaintext);
+      } else {
+        const contents = await readTextFile(selected);
+        activeTab.filePath = selected;
+        setTabContent(activeTab, contents);
+      }
+
       focusEditor();
     } catch (error) {
       activeTab.lastError =
@@ -272,6 +308,60 @@
     activeTab.filePath = null;
     setTabContent(activeTab, "");
     focusEditor();
+  }
+
+  async function saveEncryptedFile(forceDialog = false): Promise<boolean> {
+    const tab = activeTab;
+    try {
+      let targetPath = tab.filePath;
+
+      if (!targetPath || forceDialog || !targetPath.endsWith(".stn")) {
+        const selectedPath = await saveDialog({
+          title: "Save encrypted note",
+          defaultPath: targetPath?.replace(/\.[^.]+$/, "") ?? "Untitled",
+          filters: [{ name: "Encrypted Note", extensions: ["stn"] }],
+        });
+        if (!selectedPath) return false;
+        targetPath = selectedPath;
+      }
+
+      // Use cached session password to avoid re-prompting on every Ctrl+S
+      let password = tab.encryptionPassword;
+      if (!password) {
+        password = await showPasswordModal({ mode: "encrypt", filename: basename(targetPath) });
+        if (!password) return false;
+      }
+
+      tab.saveState = "saving";
+      const encryptedBytes: number[] = await invoke("encrypt_content", {
+        password,
+        plaintext: tab.fileContent,
+      });
+      await writeFile(targetPath, new Uint8Array(encryptedBytes));
+      tab.filePath = targetPath;
+      tab.encryptionPassword = password;
+      tab.isDirty = false;
+      tab.saveState = "saved";
+      tab.lastError = "";
+      return true;
+    } catch (error) {
+      tab.saveState = "error";
+      tab.lastError = error instanceof Error ? error.message : "Unable to encrypt this note.";
+      return false;
+    }
+  }
+
+  async function panicMask() {
+    for (const tab of tabs) {
+      tab.isProtected = true;
+    }
+    settingsOpen = false;
+
+    try {
+      await appWindow?.hide();
+    } catch (error) {
+      activeTab.lastError = error instanceof Error ? error.message : "Unable to hide this window.";
+    }
   }
 
   function toggleProtection() {
@@ -347,7 +437,23 @@
 
     if (matchesHotkey(event, hk.save)) {
       event.preventDefault();
-      void saveFile(false);
+      if (activeTab.filePath?.endsWith(".stn")) {
+        void saveEncryptedFile(false);
+      } else {
+        void saveFile(false);
+      }
+      return;
+    }
+
+    if (matchesHotkey(event, hk.saveEncrypted)) {
+      event.preventDefault();
+      void saveEncryptedFile(true);
+      return;
+    }
+
+    if (matchesHotkey(event, hk.panicMask)) {
+      event.preventDefault();
+      void panicMask();
       return;
     }
 
@@ -500,7 +606,8 @@
       {saveLabel}
       onNew={newFile}
       onOpen={openFile}
-      onSave={() => void saveFile(false)}
+      onSave={() => void (activeTab.filePath?.endsWith(".stn") ? saveEncryptedFile(false) : saveFile(false))}
+      onSaveEncrypted={() => void saveEncryptedFile(true)}
       onToggleSettings={() => (settingsOpen = !settingsOpen)}
     />
 
@@ -562,6 +669,15 @@
     onOk={() => { confirmState?.resolve("ok"); confirmState = null; }}
     onDiscard={() => { confirmState?.resolve("discard"); confirmState = null; }}
     onCancel={() => { confirmState?.resolve("cancel"); confirmState = null; }}
+  />
+{/if}
+
+{#if passwordState}
+  <PasswordModal
+    mode={passwordState.mode}
+    filename={passwordState.filename}
+    onConfirm={(password) => { passwordState?.resolve(password); passwordState = null; }}
+    onCancel={() => { passwordState?.resolve(null); passwordState = null; }}
   />
 {/if}
 

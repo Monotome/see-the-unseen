@@ -13,7 +13,9 @@ export type HotkeyAction =
   | "nextTab"
   | "prevTab"
   | "toggleSettings"
-  | "toggleProtection";
+  | "toggleProtection"
+  | "saveEncrypted"
+  | "panicMask";
 
 export type HotkeyBinding = {
   key: string;
@@ -35,6 +37,8 @@ export const ACTION_LABELS: Record<HotkeyAction, string> = {
   prevTab: "Previous tab",
   toggleSettings: "Settings",
   toggleProtection: "Toggle protection",
+  saveEncrypted: "Save Encrypted…",
+  panicMask: "Panic mask all",
 };
 
 export const defaultHotkeys: HotkeyMap = {
@@ -48,6 +52,8 @@ export const defaultHotkeys: HotkeyMap = {
   prevTab: { key: "tab", ctrl: true, shift: true, alt: false },
   toggleSettings: { key: ",", ctrl: true, shift: false, alt: false },
   toggleProtection: { key: "h", ctrl: true, shift: true, alt: false },
+  saveEncrypted: { key: "e", ctrl: true, shift: true, alt: false },
+  panicMask: { key: "h", ctrl: true, shift: false, alt: true },
 };
 
 export type Tab = {
@@ -63,6 +69,7 @@ export type Tab = {
   scrollLeft: number;
   lastError: string;
   sessionSeed: number;
+  encryptionPassword: string | null;
 };
 
 export function createTab(overrides: Partial<Tab> = {}): Tab {
@@ -79,6 +86,7 @@ export function createTab(overrides: Partial<Tab> = {}): Tab {
     scrollLeft: 0,
     lastError: "",
     sessionSeed: Math.floor(Math.random() * 0x7fffffff),
+    encryptionPassword: null,
     ...overrides,
   };
 }
