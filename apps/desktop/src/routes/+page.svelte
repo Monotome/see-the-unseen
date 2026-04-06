@@ -48,6 +48,7 @@
   type PasswordConfig = {
     mode: "encrypt" | "decrypt";
     filename: string;
+    submit: (password: string) => Promise<void>;
     resolve: (password: string | null) => void;
   };
 
@@ -57,6 +58,20 @@
     return new Promise((resolve) => {
       passwordState = { ...opts, resolve };
     });
+  }
+
+  async function handlePasswordConfirm(password: string) {
+    const state = passwordState;
+    if (!state) return;
+
+    await state.submit(password);
+    state.resolve(password);
+    passwordState = null;
+  }
+
+  function handlePasswordCancel() {
+    passwordState?.resolve(null);
+    passwordState = null;
   }
 
   // --- Global (window-level) state ---
@@ -278,17 +293,21 @@
       if (typeof selected !== "string") return;
 
       if (selected.endsWith(".stn")) {
-        const password = await showPasswordModal({ mode: "decrypt", filename: basename(selected) });
-        if (password === null) return;
-
         const rawBytes = await readFile(selected);
-        const plaintext: string = await invoke("decrypt_content", {
-          password,
-          data: Array.from(rawBytes),
+        await showPasswordModal({
+          mode: "decrypt",
+          filename: basename(selected),
+          submit: async (password) => {
+            const plaintext: string = await invoke("decrypt_content", {
+              password,
+              data: Array.from(rawBytes),
+            });
+            activeTab.filePath = selected;
+            activeTab.encryptionPassword = password;
+            setTabContent(activeTab, plaintext);
+            focusEditor();
+          },
         });
-        activeTab.filePath = selected;
-        activeTab.encryptionPassword = password;
-        setTabContent(activeTab, plaintext);
       } else {
         const contents = await readTextFile(selected);
         activeTab.filePath = selected;
@@ -328,7 +347,11 @@
       // Use cached session password to avoid re-prompting on every Ctrl+S
       let password = tab.encryptionPassword;
       if (!password) {
-        password = await showPasswordModal({ mode: "encrypt", filename: basename(targetPath) });
+        password = await showPasswordModal({
+          mode: "encrypt",
+          filename: basename(targetPath),
+          submit: async () => {},
+        });
         if (!password) return false;
       }
 
@@ -676,8 +699,8 @@
   <PasswordModal
     mode={passwordState.mode}
     filename={passwordState.filename}
-    onConfirm={(password) => { passwordState?.resolve(password); passwordState = null; }}
-    onCancel={() => { passwordState?.resolve(null); passwordState = null; }}
+    onConfirm={handlePasswordConfirm}
+    onCancel={handlePasswordCancel}
   />
 {/if}
 

@@ -9,7 +9,7 @@
   }: {
     mode: "encrypt" | "decrypt";
     filename: string;
-    onConfirm: (password: string) => void;
+    onConfirm: (password: string) => Promise<void>;
     onCancel: () => void;
   } = $props();
 
@@ -40,10 +40,15 @@
     return true;
   }
 
-  function handleSubmit(e: SubmitEvent) {
+  async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
-    if (validate()) {
-      onConfirm(password);
+    if (!validate()) return;
+
+    try {
+      await onConfirm(password);
+    } catch (caughtError) {
+      error =
+        caughtError instanceof Error ? caughtError.message : "Wrong password or corrupted file.";
     }
   }
 
