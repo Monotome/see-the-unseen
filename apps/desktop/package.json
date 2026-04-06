@@ -1,6 +1,6 @@
 {
   "name": "see-the-unseen-desktop",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Privacy-first desktop notes built with Tauri and Svelte.",
   "type": "module",
   "scripts": {
